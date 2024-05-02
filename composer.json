@@ -1,0 +1,30 @@
+{
+    "name": "marcel-maqsood/database-connector",
+    "description": "The PersistentPDO object is used to connect with a database and to generate sql statements on the go.",
+    "keywords": [
+        "framework",
+        "MazeDEV",
+        "pdo",
+        "persistent"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/marcel-maqsood/DatabaseConnector",
+    "authors": [
+        {
+            "name": "Technikhafen",
+            "homepage": "https://technikhafen.de"
+        },
+        {
+            "name": "Marcel Maqsood"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "MazeDEV\\DatabaseConnector\\": "src/"
+        }
+    },
+    "require": {
+        "webmozart/assert": "^1.11",
+        "psr/container": "^2.0"
+    }
+}

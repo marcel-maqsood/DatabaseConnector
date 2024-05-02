@@ -6,7 +6,6 @@ namespace MazeDEV\DatabaseConnector;
 
 use PDO;
 use Psr\Container\ContainerInterface;
-use Mezzio\Authentication\Exception;
 
 class PersistentPDOFactory
 {
@@ -17,28 +16,28 @@ class PersistentPDOFactory
 
         if (null === $pdoConfig) 
         {
-            throw new Exception\InvalidConfigException(
+            throw new \Exception(
                 "'persistentpdo' Config is missing, please check our docs: " . $config['docs'] . '#user-content-pdo'
             );
         }
 
         if (! isset($pdoConfig['dsn'])) 
         {
-            throw new Exception\InvalidConfigException(
+            throw new \Exception(
                 "no 'dsn' value set in persistentpdo Config, please check our docs:" . $config['docs'] . '#user-content-pdo'
             );
         }
 
         if (! isset($pdoConfig['username'])) 
         {
-            throw new Exception\InvalidConfigException(
+            throw new \Exception(
                 "no 'username' value set in persistentpdo Config, please check our docs:" . $config['docs'] . '#user-content-pdo'
             );
         }
 
         if (! isset($pdoConfig['password'])) 
         {
-            throw new Exception\InvalidConfigException(
+            throw new \Exception(
                 "no 'password' value set in persistentpdo Config, please check our docs:" . $config['docs'] . '#user-content-pdo'
             );
         }
