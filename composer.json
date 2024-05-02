@@ -25,6 +25,6 @@
     },
     "require": {
         "webmozart/assert": "^1.11",
-        "psr/container": "^2.0"
+        "psr/container": "^1.0"
     }
 }
