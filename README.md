@@ -1,5 +1,8 @@
 # Database-Connector | PersistentPDO
 
+You can install this package with the following command:
+```composer require marcel-maqsood/database-connector```
+
 ## Configuration
 Our Database-Connector has a very easy configuration:
 ```
