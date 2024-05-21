@@ -388,6 +388,15 @@ class PersistentPDO
             $queue = !isset($data['queue']) ? '' : $data['queue'];
             $wildcard = (!isset($data['wildcard']) || $data['wildcard'] === "none") ? '' : $data['wildcard'];
 
+            $queueString = "";
+            if($queue == null)
+            {
+                $queueString = "NULL";
+            }
+            else
+            {
+               $queueString = " '" . $queue . "'";
+            }
             switch($wildcard)
             {
                 case 'both':
@@ -405,11 +414,11 @@ class PersistentPDO
 
             if($bondConditions === "")
             {
-                $bondConditions .= $table .".`" . $field . "` " . $operator . " '" . $queue . "'";
+                $bondConditions .= $table .".`" . $field . "` " . $operator . $queueString;
                 continue;
             }
 
-            $bondConditions = $bondConditions . " " . $logicOperator . " " . $table .".`" . $field . "` " . $operator . " '" . $queue . "'";
+            $bondConditions = $bondConditions . " " . $logicOperator . " " . $table .".`" . $field . "` " . $operator . $queueString;
         }
 
         return (' WHERE ' . $bondConditions);
