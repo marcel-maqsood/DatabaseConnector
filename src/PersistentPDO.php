@@ -136,6 +136,22 @@ class PersistentPDO
 
         $sql = "SELECT " . $select . $groups . " FROM " . $table . $joins . $finalConditionString . ($groups != "" ? ' GROUP BY ' . $groupDetails['identifier'] . ' ' : ' ') . $orderString . ';';
 
+        
+        return $this->getAllBase($sql, $debug);
+    }
+
+
+     /**
+     * getAllBase() expects a sql string as first argument and prepares, executes and returns just that.
+     * This function will always return an array with all fields that got found with given conditions or NULL.
+     * 
+     * @param string $sql - The SQL Statement that should be executed
+     * @param bool $debug - Wether or not the functiion should dump the current sql for debugging.
+     * 
+     * @return array|null - The result array of the query.
+     */
+    public function getAllBase($sql, $debug)
+    {
         if($debug)
         {
             var_dump($sql);
@@ -184,6 +200,7 @@ class PersistentPDO
                 }        
             }
         }
+
         return $output;
     }
 
