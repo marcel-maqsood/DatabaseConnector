@@ -80,6 +80,15 @@ It returns either ```null``` or an ```array``` filled with keys and values where
 
 
 
+#### getAllBase() ####
+The main difference between getAll() and getAllBasae() is : getAllBase() requires a SQL string instead of plain table-names, conditions, joins or anything.
+
+This is extremly useful when you need to make edge-case queries like checks for items that are present in one table but not in another as this is not supported by our other functions and thus require custom SQL statements.
+
+Just like getAll() - It returns either ```null``` or an ```array``` filled with keys and values where every value is a ```string```.
+
+
+
 #### update() ####
 
 Updates data in the database based on specific conditions.
