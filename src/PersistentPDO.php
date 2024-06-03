@@ -380,7 +380,7 @@ class PersistentPDO
      * 
      * @return string
      */
-    private function generateConditionString($table, $conditions) : string
+    public function generateConditionString($table, $conditions) : string
     {
         $bondConditions = "";
  
