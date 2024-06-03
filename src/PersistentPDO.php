@@ -410,10 +410,6 @@ class PersistentPDO
             {
                 $queueString = "NULL";
             }
-            else
-            {
-               $queueString = " '" . $queue . "'";
-            }
             switch($wildcard)
             {
                 case 'both':
@@ -428,7 +424,7 @@ class PersistentPDO
                 default:
                     break;
             }
-
+			$queueString = " '" . $queue . "'";
             if($bondConditions === "")
             {
                 $bondConditions .= $table .".`" . $field . "` " . $operator . $queueString;
