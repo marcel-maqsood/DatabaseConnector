@@ -363,6 +363,14 @@ class PersistentPDO
                 //empty fields will not get inserted
                 continue;
             }
+            if($value === null)
+			{
+				$value = "NULL";
+			}
+			else
+			{
+				$value = "'" . $value . "'";
+			}
             if($updateString == "")
             {
                 $updateString .= '`' . $field . "` = " . "'" . $value . "'";
