@@ -358,7 +358,7 @@ class PersistentPDO
 
         foreach($updates as $field => $value)
         {
-            if($value == "")
+            if($value === "")
             {
                 //empty fields will not get inserted
                 continue;
