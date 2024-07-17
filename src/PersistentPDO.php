@@ -150,7 +150,7 @@ class PersistentPDO
      * 
      * @return array|null - The result array of the query.
      */
-    public function getAllBase($sql, $debug)
+    public function getAllBase($sql, $debug = false)
     {
         if($debug)
         {
@@ -406,8 +406,9 @@ class PersistentPDO
         {
             return "";
         }
-        foreach($conditions as $field => $data)
+        foreach($conditions as $data)
         {
+            $field = $data['field'];
             $logicOperator = !isset($data['logicalOperator']) ? '' : $data['logicalOperator'];
             $operator = !isset($data['operator']) ? 'LIKE' : $data['operator'];
             $queue = !isset($data['queue']) ? '' : $data['queue'];

@@ -53,12 +53,13 @@ It receives the follwing params:
 
 ##### conditions are getting appended after "WHERE" don't include it. #####
 
-The first condition should not include a 'logicalOperator' key, as there is no preceding condition to combine with, also it won't get used.
+The first condition should not include a 'logicalOperator' key, as there is no preceding condition to combine with, also it won't get used if defined.
 Example:
 ```
 $conditions = [
-    'name' => [
-        'logicalOperator' => 'AND' // The logical operator to combine conditions: 'AND' or 'OR'
+    [
+        'field' => 'tableCol',
+        'logicalOperator' => 'AND' // The logical operator to combine conditions: 'AND' or 'OR' (wont be used, as its the first condition)
         'operator' => 'LIKE',  // The operation that this condition must match.
         'queue' => 'admin',    // The value to look for in the 'name' field.
         'wildcard' => 'both'   // The mode for character matching: before | after | both | none .
