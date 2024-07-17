@@ -373,11 +373,11 @@ class PersistentPDO
 			}
             if($updateString == "")
             {
-                $updateString .= '`' . $field . "` = " . "'" . $value . "'";
+                $updateString .= '`' . $field . "` = " .   $value ;
                 continue;
             }
 
-            $updateString .= ", `" . $field . "` = " . "'" . $value . "'";
+            $updateString .= ", `" . $field . "` = " . $value;
         }
         return $updateString;
     }
