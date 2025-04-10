@@ -132,3 +132,44 @@ It receives the follwing params:
 * ```array|string``` $conditions - this function uses the same syntax as get().
 
 This functions returns a bool: the result of the given statement.
+
+
+
+### Condition Array ###
+As stated earlier, conditions can either be a string (x = y) without appended "WHERE" or a condition array, which can look something like this:
+```
+'conditions' => [
+    [
+        'field'           => 'COL',
+        'logicalOperator' => 'OR',
+        'operator'        => 'LIKE',
+        'wildcard'        => 'both',
+        'tableOverride'   => 'TABLE',
+    ],
+    [
+        'type'            => 'conditionalFallback',
+        'logicalOperator' => 'OR',
+        'if' => [
+            'field'         => 'COL',
+            'operator'      => 'IS NOT',
+            'queue'         => null,
+            'tableOverride' => 'TABLE',
+        ],
+        'then' => [
+            'field'         => 'COL',
+            'operator'      => 'LIKE',
+            'wildcard'      => 'both',
+            'tableOverride' => 'TABLE',
+        ],
+        'else' => [
+            'field'         => 'otherCOL',
+            'operator'      => 'LIKE',
+            'wildcard'      => 'both',
+            'tableOverride' => 'otherTABLE',
+        ],
+    ],
+]
+```
+
+This insures that you can either use simple conditions for only certain cols and tables or even conditions that need to contain some more logic, as: if ´COL´ IS NOT NULL then use ´COL´ otherwise use ´otherCOL´
+

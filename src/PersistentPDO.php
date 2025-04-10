@@ -15,7 +15,7 @@ class PersistentPDO
     {
         $this->pdo = $pdo;
     }
-
+    
     public function getPDO() : PDO 
     {
         return $this->pdo;
@@ -389,64 +389,88 @@ class PersistentPDO
      * @return string
      */
     public function generateConditionString($table, $conditions) : string
-    {
-        $bondConditions = "";
- 
-        if(!is_Array($conditions))
-        {
-            if($conditions !== null && $conditions !== "")
-            {
-                return $bondConditions =  " WHERE $table.$conditions";
-            }
-            //There are no conditions set so we return an empty string.
-            return $bondConditions;
-        }
+	{
+		$bondConditions = "";
 
-        if($conditions === [])
-        {
-            return "";
-        }
-        foreach($conditions as $data)
-        {
-            $field = $data['field'];
-            $logicOperator = !isset($data['logicalOperator']) ? '' : $data['logicalOperator'];
-            $operator = !isset($data['operator']) ? 'LIKE' : $data['operator'];
-            $queue = !isset($data['queue']) ? '' : $data['queue'];
-            $wildcard = (!isset($data['wildcard']) || $data['wildcard'] === "none") ? '' : $data['wildcard'];
+		if (!is_array($conditions)) {
+			if ($conditions !== null && $conditions !== "") {
+				return " WHERE $table." . $conditions;
+			}
+			return "";
+		}
 
+		if ($conditions === []) {
+			return "";
+		}
+
+		foreach ($conditions as $data) {
+			// Sonderfall: if-then-else-Bedingung
+			if (isset($data['type']) && $data['type'] === 'conditionalFallback') {
+				$logicOperator = $data['logicalOperator'] ?? '';
+
+				$if = $data['if'];
+				$ifField = $if['field'];
+				$ifOperator = $if['operator'] ?? 'IS NOT';
+				$ifValue = $if['queue'] ?? null;
+				$ifTable = $if['tableOverride'] ?? $table;
+
+				$ifCondition = "$ifTable.`$ifField` $ifOperator " . ($ifValue === null ? "NULL" : "'$ifValue'");
+
+				$then = $data['then'];
+				$thenTable = $then['tableOverride'] ?? $table;
+				$thenWildcard = $this->buildWildcardValue($then['queue'] ?? '', $then['wildcard'] ?? 'none');
+				$thenOperator = $then['operator'] ?? 'LIKE';
+				$thenCondition = "$thenTable.`{$then['field']}` $thenOperator '$thenWildcard'";
+
+				$else = $data['else'];
+				$elseTable = $else['tableOverride'] ?? $table;
+				$elseWildcard = $this->buildWildcardValue($else['queue'] ?? '', $else['wildcard'] ?? 'none');
+				$elseOperator = $else['operator'] ?? 'LIKE';
+				$elseCondition = "$elseTable.`{$else['field']}` $elseOperator '$elseWildcard'";
+
+				$fullCondition = "(($ifCondition AND $thenCondition) OR (NOT($ifCondition) AND $elseCondition))";
+
+				$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $fullCondition;
+				continue;
+			}
+
+			// Standardbedingung
+			$field = $data['field'];
+			$logicOperator = $data['logicalOperator'] ?? '';
+			$operator = $data['operator'] ?? 'LIKE';
+			$queue = $data['queue'] ?? '';
+			$wildcard = (!isset($data['wildcard']) || $data['wildcard'] === "none") ? '' : $data['wildcard'];
 			$tableOverride = (!isset($data['tableOverride']) || $data['tableOverride'] === "none") ? $table : $data['tableOverride'];
 
-            $queueString = "";
-            if($queue == null)
-            {
-                $queueString = "NULL";
-            }
-            switch($wildcard)
-            {
-                case 'both':
-                    $queue = "%" . $queue . "%";
-                    break;
-                case 'before':
-                    $queue = "%" . $queue;
-                    break;
-                case 'after':
-                    $queue .= "%";
-                    break;
-                default:
-                    break;
-            }
-			$queueString = " '" . $queue . "'";
-            if($bondConditions === "")
-            {
-                $bondConditions .= $tableOverride .".`" . $field . "` " . $operator . $queueString;
-                continue;
-            }
+			if ($queue === null) {
+				$queueString = "NULL";
+			} else {
+				$queue = $this->buildWildcardValue($queue, $wildcard);
+				$queueString = "'$queue'";
+			}
 
-            $bondConditions = $bondConditions . " " . $logicOperator . " " . $tableOverride .".`" . $field . "` " . $operator . $queueString;
-        }
+			$condition = "$tableOverride.`$field` $operator $queueString";
 
-        return (' WHERE ' . $bondConditions);
-    }
+			$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $condition;
+		}
+
+		return $bondConditions === "" ? "" : " WHERE " . $bondConditions;
+	}
+	
+	private function buildWildcardValue($value, $wildcard)
+	{
+		if ($value === null) return '';
+		switch ($wildcard) {
+			case 'both':
+				return '%' . $value . '%';
+			case 'before':
+				return '%' . $value;
+			case 'after':
+				return $value . '%';
+			default:
+				return $value;
+		}
+	}
 
     private function generateSQLJoins(array $joins = [])
     {
