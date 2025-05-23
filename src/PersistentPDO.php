@@ -330,65 +330,61 @@ class PersistentPDO
         return $groupedString;
     }
 
-    private function generateInsertString(array $inserts) : string
-    {
+	private function generateInsertString(array $inserts) : string
+	{
+		$columns = [];
+		$values = [];
 
-        $insertString = "";
-        $valueString = "";
-        foreach ($inserts as $key => $value) 
-        {
-            if($insertString === "")
-            {
-                $valueString .= "( '" . $value . "'";
-                $insertString .= "( `" . $key . "`";
-                continue;
-            }
-            $valueString .= ", '" . $value . "'";
-            $insertString .= ", `" . $key . "`";
-        }
-        $valueString .= " )";
-        $insertString .= " )";
+		foreach ($inserts as $key => $value) {
+			$value .= "";
+			$columns[] = "`" . str_replace("`", "``", $key) . "`";
+			$values[] = $this->pdo->quote($value);
+		}
 
-        return $insertString . ' VALUES ' . $valueString;
-    }
-    
-    private function generateUpdateSQLString(array $updates) : string
-    {
-        $updateString = "";
+		$insertString = "(" . implode(", ", $columns) . ")";
+		$valueString = "(" . implode(", ", $values) . ")";
 
-        foreach($updates as $field => $value)
-        {
-            if($value === "")
-            {
-                //empty fields will not get inserted
-                continue;
-            }
-            if($value === null)
-			{
-				$value = "NULL";
+		return $insertString . " VALUES " . $valueString;
+	}
+
+
+	private function generateUpdateSQLString(array $updates): string
+	{
+		$updateString = "";
+
+		foreach ($updates as $field => $value) {
+			$value .= "";
+			if ($value === "") {
+				continue;
 			}
-			else
-			{
-				$value = "'" . $value . "'";
+
+			$safeField = "`" . str_replace("`", "``", $field) . "`";
+
+			if ($value === null) {
+				$escapedValue = "NULL";
+			} else {
+				$escapedValue = $this->pdo->quote($value);
 			}
-            if($updateString == "")
-            {
-                $updateString .= '`' . $field . "` = " .   $value ;
-                continue;
-            }
 
-            $updateString .= ", `" . $field . "` = " . $value;
-        }
-        return $updateString;
-    }
+			// SQL-Teilstück zusammenbauen
+			if ($updateString === "") {
+				$updateString .= "$safeField = $escapedValue";
+			} else {
+				$updateString .= ", $safeField = $escapedValue";
+			}
+		}
 
-    /**
+		return $updateString;
+	}
+
+
+	/**
      * 
      * Appends all conditions, handles each of them as configured
      * 
      * @return string
      */
-    public function generateConditionString($table, $conditions) : string
+	public function generateConditionString($table, $conditions): string
 	{
 		$bondConditions = "";
 
@@ -404,7 +400,6 @@ class PersistentPDO
 		}
 
 		foreach ($conditions as $data) {
-			// Sonderfall: if-then-else-Bedingung
 			if (isset($data['type']) && $data['type'] === 'conditionalFallback') {
 				$logicOperator = $data['logicalOperator'] ?? '';
 
@@ -414,27 +409,25 @@ class PersistentPDO
 				$ifValue = $if['queue'] ?? null;
 				$ifTable = $if['tableOverride'] ?? $table;
 
-				$ifCondition = "$ifTable.`$ifField` $ifOperator " . ($ifValue === null ? "NULL" : "'$ifValue'");
+				$ifCondition = "$ifTable.`$ifField` $ifOperator " . ($ifValue === null ? "NULL" : $pdo->quote($ifValue));
 
 				$then = $data['then'];
 				$thenTable = $then['tableOverride'] ?? $table;
 				$thenWildcard = $this->buildWildcardValue($then['queue'] ?? '', $then['wildcard'] ?? 'none');
 				$thenOperator = $then['operator'] ?? 'LIKE';
-				$thenCondition = "$thenTable.`{$then['field']}` $thenOperator '$thenWildcard'";
+				$thenCondition = "$thenTable.`{$then['field']}` $thenOperator " . $pdo->quote($thenWildcard);
 
 				$else = $data['else'];
 				$elseTable = $else['tableOverride'] ?? $table;
 				$elseWildcard = $this->buildWildcardValue($else['queue'] ?? '', $else['wildcard'] ?? 'none');
 				$elseOperator = $else['operator'] ?? 'LIKE';
-				$elseCondition = "$elseTable.`{$else['field']}` $elseOperator '$elseWildcard'";
+				$elseCondition = "$elseTable.`{$else['field']}` $elseOperator " . $pdo->quote($elseWildcard);
 
 				$fullCondition = "(($ifCondition AND $thenCondition) OR (NOT($ifCondition) AND $elseCondition))";
-
 				$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $fullCondition;
 				continue;
 			}
 
-			// Standardbedingung
 			$field = $data['field'];
 			$logicOperator = $data['logicalOperator'] ?? '';
 			$operator = $data['operator'] ?? 'LIKE';
@@ -446,17 +439,17 @@ class PersistentPDO
 				$queueString = "NULL";
 			} else {
 				$queue = $this->buildWildcardValue($queue, $wildcard);
-				$queueString = "'$queue'";
+				$queueString = $this->pdo->quote($queue);
 			}
 
 			$condition = "$tableOverride.`$field` $operator $queueString";
-
 			$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $condition;
 		}
 
 		return $bondConditions === "" ? "" : " WHERE " . $bondConditions;
 	}
-	
+
+
 	private function buildWildcardValue($value, $wildcard)
 	{
 		if ($value === null) return '';
