@@ -409,19 +409,19 @@ class PersistentPDO
 				$ifValue = $if['queue'] ?? null;
 				$ifTable = $if['tableOverride'] ?? $table;
 
-				$ifCondition = "$ifTable.`$ifField` $ifOperator " . ($ifValue === null ? "NULL" : $pdo->quote($ifValue));
+				$ifCondition = "$ifTable.`$ifField` $ifOperator " . ($ifValue === null ? "NULL" : $this->pdo->quote($ifValue));
 
 				$then = $data['then'];
 				$thenTable = $then['tableOverride'] ?? $table;
 				$thenWildcard = $this->buildWildcardValue($then['queue'] ?? '', $then['wildcard'] ?? 'none');
 				$thenOperator = $then['operator'] ?? 'LIKE';
-				$thenCondition = "$thenTable.`{$then['field']}` $thenOperator " . $pdo->quote($thenWildcard);
+				$thenCondition = "$thenTable.`{$then['field']}` $thenOperator " . $this->pdo->quote($thenWildcard);
 
 				$else = $data['else'];
 				$elseTable = $else['tableOverride'] ?? $table;
 				$elseWildcard = $this->buildWildcardValue($else['queue'] ?? '', $else['wildcard'] ?? 'none');
 				$elseOperator = $else['operator'] ?? 'LIKE';
-				$elseCondition = "$elseTable.`{$else['field']}` $elseOperator " . $pdo->quote($elseWildcard);
+				$elseCondition = "$elseTable.`{$else['field']}` $elseOperator " . $this->pdo->quote($elseWildcard);
 
 				$fullCondition = "(($ifCondition AND $thenCondition) OR (NOT($ifCondition) AND $elseCondition))";
 				$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $fullCondition;
