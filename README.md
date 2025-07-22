@@ -6,6 +6,7 @@ You can install this package with the following command:
 ## Configuration
 Our Database-Connector has a very easy configuration:
 ```
+'showSqlLog' => false, //allows the PersistentPDO object to track each SQL that went through its API.
 'persistentpdo' => [
     'dsn' => 'mysql:host=localhost;dbname=report_portal;port=3306', //- DSN string to connect to your database.
     'username' => 'root', //- The username which you want to use to connect.

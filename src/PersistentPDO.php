@@ -9,12 +9,18 @@ use PDO;
 
 class PersistentPDO 
 {
+
+	public $sqlList = [];
+
     private PDO $pdo;
 
-    public function __construct(PDO $pdo)
+	private $showSqlLog = false;
+
+    public function __construct(PDO $pdo, bool $showSqlLog)
     {
         $this->pdo = $pdo;
-    }
+		$this->showSqlLog = $showSqlLog;
+	}
     
     public function getPDO() : PDO 
     {
@@ -62,6 +68,10 @@ class PersistentPDO
 
 
         $sql = "SELECT $table.*" . $groups . " FROM " . $table . $joins . $finalConditionString . ($groups != "" ? ' GROUP BY ' . $groupDetails['identifier'] . ' ' : ' ') . ';';
+
+		if($this->showSqlLog === true){
+			$this->sqlList[] = $sql;
+		}
 
         if($debug)
         {
@@ -136,7 +146,10 @@ class PersistentPDO
 
         $sql = "SELECT " . $select . $groups . " FROM " . $table . $joins . $finalConditionString . ($groups != "" ? ' GROUP BY ' . $groupDetails['identifier'] . ' ' : ' ') . $orderString . ';';
 
-        
+		if($this->showSqlLog === true){
+			$this->sqlList[] = $sql;
+		}
+
         return $this->getAllBase($sql, $debug);
     }
 
@@ -157,6 +170,10 @@ class PersistentPDO
             var_dump($sql);
             exit;
         }
+
+		if($this->showSqlLog === true){
+			$this->sqlList[] = $sql;
+		}
 
         $stmt = $this->pdo->prepare($sql);
 
@@ -215,6 +232,10 @@ class PersistentPDO
     {
         $sql = "UPDATE " . $table . " SET " . $this->generateUpdateSQLString($updates) . (($conditions === [] || $conditions === null) ? '' :  $this->generateConditionString($table, $conditions));
 
+		if($this->showSqlLog === true){
+			$this->sqlList[] = $sql;
+		}
+
         if($debug)
         {
             var_dump($sql);
@@ -222,11 +243,14 @@ class PersistentPDO
         }
 
         $stmt = $this->pdo->prepare($sql);
+
         if ($stmt === null) 
         {
             throw new \Exception\RuntimeException('PDO error: ' . $e->getMessage());
         }
-        
+
+
+
         return $stmt->execute();
     }
 
@@ -250,6 +274,10 @@ class PersistentPDO
             $this->pdo->beginTransaction();
 
             $sql = "INSERT INTO " . $table . " " . $this->generateInsertString($inserts);
+
+			if($this->showSqlLog === true){
+				$this->sqlList[] = $sql;
+			}
 
             if ($debug) 
             {
@@ -291,7 +319,11 @@ class PersistentPDO
         $finalConditionString = $this->generateConditionString($table, $conditions);
 
         $sql = "DELETE FROM " . $table . $finalConditionString;
-        
+
+		if($this->showSqlLog === true){
+			$this->sqlList[] = $sql;
+		}
+
         if($debug)
         {
             var_dump($sql);

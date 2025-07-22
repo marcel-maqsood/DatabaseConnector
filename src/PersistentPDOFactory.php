@@ -51,6 +51,6 @@ class PersistentPDOFactory
 
         $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
-        return new PersistentPDO($connection);
+        return new PersistentPDO($connection, $config["showSqlLog"]);
     }
 }
