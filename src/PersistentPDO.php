@@ -145,11 +145,6 @@ class PersistentPDO
 
 
         $sql = "SELECT " . $select . $groups . " FROM " . $table . $joins . $finalConditionString . ($groups != "" ? ' GROUP BY ' . $groupDetails['identifier'] . ' ' : ' ') . $orderString . ';';
-
-		if($this->showSqlLog === true){
-			$this->sqlList[] = $sql;
-		}
-
         return $this->getAllBase($sql, $debug);
     }
 
@@ -163,66 +158,59 @@ class PersistentPDO
      * 
      * @return array|null - The result array of the query.
      */
-    public function getAllBase($sql, $debug = false)
-    {
-        if($debug)
-        {
-            var_dump($sql);
-            exit;
-        }
+	public function getAllBase($sql, $debug = false, $params = [])
+	{
+		if ($debug) {
+			var_dump($sql, $params);
+			exit;
+		}
 
-		if($this->showSqlLog === true){
+		if ($this->showSqlLog === true) {
 			$this->sqlList[] = $sql;
 		}
 
-        $stmt = $this->pdo->prepare($sql);
+		$stmt = $this->pdo->prepare($sql);
+		if ($stmt === false) {
+			throw new \RuntimeException("PDO error: SQL Statement couldn't be prepared.");
+		}
 
-        if (false === $stmt) 
-        {
-            throw new \Exception\RuntimeException("PDO error: SQL Statement couldn't be prepared.");
-        }
+		$stmt->execute($params);
+		$results = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_OBJ);
+		if (empty($results)) {
+			return null;
+		}
 
-        if(empty($results))
-        {
-            return null;
-        }
+		$output = [];
+		$columnNames = array_keys(get_object_vars($results[0]));
 
-        $output = [];
-        $columnNames = array_keys(get_object_vars($results[0]));
-        //We are assuming that every table always has a unique field "id" as identifier.
-        foreach ($results as $result) 
-        {
-            $keyCol = "";
-            foreach ($columnNames as $columnName) 
-            {
-                //The first entry will always be our row-id but to allow for configurability, we don't hardcode them.
-                if ($keyCol === "" && strpos($columnName, 'Id') !== false) 
-                {
-                    $keyCol = $columnName;
-                }
+		foreach ($results as $result) {
+			$keyCol = '';
+			foreach ($columnNames as $columnName) {
+				// Erste Spalte mit "Id" als Key nehmen
+				if ($keyCol === '' && strpos($columnName, 'Id') !== false) {
+					$keyCol = $columnName;
+				}
 
-                //Current index is not set yet, so we save it as string at first.
-                if(!isset($output[$result->{$keyCol}][$columnName]))
-                {
-                    $output[$result->{$keyCol}][$columnName] = strval($result->{$columnName});
-                    continue;
-                }
-                
-                if ( stristr(strval($output[$result->{$keyCol}][$columnName]), strval($result->{$columnName})) == false ) 
-                { 
-                    $output[$result->{$keyCol}][$columnName]  .=  "," . $result->{$columnName};
-                }        
-            }
-        }
+				// Falls noch nicht gesetzt → initialer Wert
+				if (!isset($output[$result->{$keyCol}][$columnName])) {
+					$output[$result->{$keyCol}][$columnName] = strval($result->{$columnName});
+					continue;
+				}
 
-        return $output;
-    }
+				$current = explode(',', $output[$result->{$keyCol}][$columnName]);
+				if (!in_array(strval($result->{$columnName}), $current, true)) {
+					$output[$result->{$keyCol}][$columnName] .= ',' . $result->{$columnName};
+				}
+			}
+		}
+
+		return $output;
+	}
 
 
-    /**
+
+	/**
      * Updates data in the database based on specific conditions
      * 
      * @param array $updates - An array with fields and the new values.
