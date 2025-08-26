@@ -373,7 +373,6 @@ class PersistentPDO
 		$updateString = "";
 
 		foreach ($updates as $field => $value) {
-			$value .= "";
 			if ($value === "") {
 				continue;
 			}
