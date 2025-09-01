@@ -411,7 +411,7 @@ class PersistentPDO
 
 		foreach ($updates as $field => $value) {
 			if ($value === "") {
-				continue;
+				$value = null;
 			}
 
 			$safeField = "`" . str_replace("`", "``", $field) . "`";
