@@ -245,6 +245,24 @@ class PersistentPDO
 		return $output;
 	}
 
+    public function getAllWithSubArrays(string $sql, bool $debug = false, array $params = [], string $delimiter = ','): ?array
+    {
+        $results = $this->getAllBase($sql, $debug, $params);
+        if ($results === null) {
+            return null;
+        }
+
+        foreach ($results as &$row) {
+            foreach ($row as $key => $value) {
+                // Falls es ein GROUP_CONCAT Feld ist (erkennbar an enthaltenem Komma)
+                if (is_string($value) && str_contains($value, $delimiter)) {
+                    $row[$key] = array_values(array_filter(array_map('trim', explode($delimiter, $value))));
+                }
+            }
+        }
+        return $results;
+    }
+
 
 
 	/**
