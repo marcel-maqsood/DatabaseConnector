@@ -393,9 +393,12 @@ class PersistentPDO
 		$values = [];
 
 		foreach ($inserts as $key => $value) {
-			$value .= "";
-			$columns[] = "`" . str_replace("`", "``", $key) . "`";
-			$values[] = $this->pdo->quote($value);
+			if($value != '' && $value != null)
+			{
+				$columns[] = "`" . str_replace("`", "``", $key) . "`";
+				$values[] = $this->pdo->quote($value .= "");
+			}
+
 		}
 
 		$insertString = "(" . implode(", ", $columns) . ")";
