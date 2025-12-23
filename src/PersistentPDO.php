@@ -405,55 +405,43 @@ class PersistentPDO
 		return $groupedString;
 	}
 
-	private function generateInsertString(array $inserts) : string
+	private function generateInsertString(array $inserts): string
 	{
 		$columns = [];
-		$values = [];
+		$values  = [];
 
 		foreach ($inserts as $key => $value) {
-			if($value != '' && $value != null)
-			{
-				$columns[] = "`" . str_replace("`", "``", $key) . "`";
-				$values[] = $this->pdo->quote($value .= "");
+			if ($value !== '' && $value !== null) {
+				$columns[] = $this->qi($key);
+				$values[]  = $this->pdo->quote((string)$value);
 			}
-
 		}
 
-		$insertString = "(" . implode(", ", $columns) . ")";
-		$valueString = "(" . implode(", ", $values) . ")";
-
-		return $insertString . " VALUES " . $valueString;
+		return "(" . implode(", ", $columns) . ") VALUES (" . implode(", ", $values) . ")";
 	}
+
 
 
 	private function generateUpdateSQLString(array $updates): string
 	{
-		$updateString = "";
+		$updateParts = [];
 
 		foreach ($updates as $field => $value) {
 			if ($value === "") {
 				$value = null;
 			}
 
-			$safeField = "`" . str_replace("`", "``", $field) . "`";
+			$safeField = $this->qi($field);
 
-			if ($value === null) {
-				$escapedValue = "NULL";
-			} else {
-				$escapedValue = $this->pdo->quote($value . "");
-			}
+			$escapedValue = ($value === null)
+				? "NULL"
+				: $this->pdo->quote((string)$value);
 
-			// SQL-Teilstück zusammenbauen
-			if ($updateString === "") {
-				$updateString .= "$safeField = $escapedValue";
-			} else {
-				$updateString .= ", $safeField = $escapedValue";
-			}
+			$updateParts[] = $safeField . " = " . $escapedValue;
 		}
 
-		return $updateString;
+		return implode(", ", $updateParts);
 	}
-
 
 	/**
 	 *
@@ -467,7 +455,7 @@ class PersistentPDO
 
 		if (!is_array($conditions)) {
 			if ($conditions !== null && $conditions !== "") {
-				return " WHERE $table." . $conditions;
+				return " WHERE " . $this->qi($table) . "." . $this->qi($conditions);
 			}
 			return "";
 		}
@@ -481,35 +469,43 @@ class PersistentPDO
 				$logicOperator = $data['logicalOperator'] ?? '';
 
 				$if = $data['if'];
-				$ifField = $if['field'];
+				$ifField    = $if['field'];
 				$ifOperator = $if['operator'] ?? 'IS NOT';
-				$ifValue = $if['queue'] ?? null;
-				$ifTable = $if['tableOverride'] ?? $table;
+				$ifValue    = $if['queue'] ?? null;
+				$ifTable    = $if['tableOverride'] ?? $table;
 
-				$ifCondition = "$ifTable.`$ifField` $ifOperator " . ($ifValue === null ? "NULL" : $this->pdo->quote($ifValue));
+				$ifCondition =
+					$this->qi($ifTable) . "." . $this->qi($ifField) . " " . $ifOperator . " " .
+					($ifValue === null ? "NULL" : $this->pdo->quote($ifValue));
 
 				$then = $data['then'];
-				$thenTable = $then['tableOverride'] ?? $table;
+				$thenTable    = $then['tableOverride'] ?? $table;
 				$thenWildcard = $this->buildWildcardValue($then['queue'] ?? '', $then['wildcard'] ?? 'none');
 				$thenOperator = $then['operator'] ?? 'LIKE';
-				$thenCondition = "$thenTable.`{$then['field']}` $thenOperator " . $this->pdo->quote($thenWildcard);
+
+				$thenCondition =
+					$this->qi($thenTable) . "." . $this->qi($then['field']) . " " . $thenOperator . " " .
+					$this->pdo->quote($thenWildcard);
 
 				$else = $data['else'];
-				$elseTable = $else['tableOverride'] ?? $table;
+				$elseTable    = $else['tableOverride'] ?? $table;
 				$elseWildcard = $this->buildWildcardValue($else['queue'] ?? '', $else['wildcard'] ?? 'none');
 				$elseOperator = $else['operator'] ?? 'LIKE';
-				$elseCondition = "$elseTable.`{$else['field']}` $elseOperator " . $this->pdo->quote($elseWildcard);
+
+				$elseCondition =
+					$this->qi($elseTable) . "." . $this->qi($else['field']) . " " . $elseOperator . " " .
+					$this->pdo->quote($elseWildcard);
 
 				$fullCondition = "(($ifCondition AND $thenCondition) OR (NOT($ifCondition) AND $elseCondition))";
 				$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $fullCondition;
 				continue;
 			}
 
-			$field = $data['field'];
+			$field         = $data['field'];
 			$logicOperator = $data['logicalOperator'] ?? '';
-			$operator = $data['operator'] ?? 'LIKE';
-			$queue = $data['queue'] ?? '';
-			$wildcard = (!isset($data['wildcard']) || $data['wildcard'] === "none") ? '' : $data['wildcard'];
+			$operator      = $data['operator'] ?? 'LIKE';
+			$queue         = $data['queue'] ?? '';
+			$wildcard      = (!isset($data['wildcard']) || $data['wildcard'] === "none") ? '' : $data['wildcard'];
 			$tableOverride = (!isset($data['tableOverride']) || $data['tableOverride'] === "none") ? $table : $data['tableOverride'];
 
 			if ($queue === null) {
@@ -519,11 +515,30 @@ class PersistentPDO
 				$queueString = $this->pdo->quote($queue);
 			}
 
-			$condition = "$tableOverride.`$field` $operator $queueString";
+			$condition =
+				$this->qi($tableOverride) . "." . $this->qi($field) . " " . $operator . " " . $queueString;
+
 			$bondConditions .= ($bondConditions === "" ? "" : " $logicOperator ") . $condition;
 		}
 
 		return $bondConditions === "" ? "" : " WHERE " . $bondConditions;
+	}
+
+	private function qi(string $ident): string
+	{
+		$parts = explode('.', $ident);
+
+		$driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+		$q = ($driver === 'pgsql') ? '"' : '`';
+
+		foreach ($parts as &$p) {
+			if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $p)) {
+				throw new \InvalidArgumentException("Invalid identifier: " . $p);
+			}
+			$p = $q . $p . $q;
+		}
+
+		return implode('.', $parts);
 	}
 
 
