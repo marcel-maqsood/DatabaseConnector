@@ -532,9 +532,10 @@ class PersistentPDO
 		$q = ($driver === 'pgsql') ? '"' : '`';
 
 		foreach ($parts as &$p) {
-			if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $p)) {
+			//Checkt ob hier tatsächlich ein identifier übergeben wird
+			/*if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $p)) {
 				throw new \InvalidArgumentException("Invalid identifier: " . $p);
-			}
+			}*/
 			$p = $q . $p . $q;
 		}
 
