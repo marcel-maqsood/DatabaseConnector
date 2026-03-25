@@ -10,9 +10,11 @@ use PDO;
 class PersistentPDO
 {
 
+
 	public $sqlList = [];
 
 	private PDO $pdo;
+	private string $quoteString = "";
 
 	private $showSqlLog = false;
 
@@ -20,6 +22,8 @@ class PersistentPDO
 	{
 		$this->pdo = $pdo;
 		$this->showSqlLog = $showSqlLog;
+		$driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+		$this->quoteString = ($driver === 'pgsql') ? '"' : '`';
 	}
 
 	public function getPDO() : PDO
@@ -446,7 +450,8 @@ class PersistentPDO
 	/**
 	 *
 	 * Appends all conditions, handles each of them as configured
-	 *
+	 * @param string $table,
+	 * @param string|array $conditions,
 	 * @return string
 	 */
 	public function generateConditionString($table, $conditions): string
@@ -455,7 +460,7 @@ class PersistentPDO
 
 		if (!is_array($conditions)) {
 			if ($conditions !== null && $conditions !== "") {
-				return " WHERE " . $this->qi($table) . "." . $this->qi($conditions);
+				return " WHERE " . $table . "." . $conditions;
 			}
 			return "";
 		}
@@ -528,15 +533,9 @@ class PersistentPDO
 	{
 		$parts = explode('.', $ident);
 
-		$driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-		$q = ($driver === 'pgsql') ? '"' : '`';
 
 		foreach ($parts as &$p) {
-			//Checkt ob hier tatsächlich ein identifier übergeben wird
-			/*if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $p)) {
-				throw new \InvalidArgumentException("Invalid identifier: " . $p);
-			}*/
-			$p = $q . $p . $q;
+			$p = $this->quoteString . $p . $this->quoteString ;
 		}
 
 		return implode('.', $parts);
