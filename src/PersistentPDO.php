@@ -111,24 +111,23 @@ class PersistentPDO
 	 *
 	 * @return array|null - The result array of the query.
 	 */
-	public function getAll($table, array|string $conditions = [], array $joins = [], $groupDetails = [], $orderBy = "", array $cols = [], $debug = false)
+	public function getAll($table, array|string $conditions = [], array $joins = [], $groupDetails = [], $orderBy = "", array $cols = [], int|string|null $limit = null, $debug = false)
 	{
 		$sql;
 		$joins = $this->generateSQLJoins($joins);
 		$finalConditionString = $this->generateConditionString($table, $conditions);
 		$groups = "";
 		$orderString = "";
+
 		if($orderBy != "")
 		{
-			$orderString = 'ORDER BY ' . $orderBy;
+			$orderString = ' ORDER BY ' . $orderBy;
 		}
-
 
 		if(!empty($groupDetails))
 		{
 			$groups = ",". $this->generateGroupingString($groupDetails['groups']);
 		}
-
 
 		$select = "";
 
@@ -146,9 +145,13 @@ class PersistentPDO
 
 		$select = rtrim($select, ', ');
 
+		$limitString = "";
+		if ($limit !== null && $limit !== "")
+		{
+			$limitString = " LIMIT " . $limit;
+		}
+		$sql = "SELECT " . $select . $groups . " FROM " . $table . $joins . $finalConditionString . ($groups != "" ? ' GROUP BY ' . $groupDetails['identifier'] . ' ' : ' ') . $orderString . $limitString . ';';
 
-
-		$sql = "SELECT " . $select . $groups . " FROM " . $table . $joins . $finalConditionString . ($groups != "" ? ' GROUP BY ' . $groupDetails['identifier'] . ' ' : ' ') . $orderString . ';';
 		return $this->getAllBase($sql, $debug);
 	}
 
